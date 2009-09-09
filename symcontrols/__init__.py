@@ -106,4 +106,16 @@ class SymTF(object):
         print tf_num,tf_den
         return TF(tf_num,tf_den,dt=dt,maxt=maxt,myvar=myvar)
 
+    def __radd__(self,other):
+        return self.__add__(other)
+
+    def __rmul__(self,other):
+        return self.__mul__(other)
+
+    def __rdiv__(self, other):
+        return self.__div__(other)
+
+    def __truediv__(self,other):
+        return self.__div__(other)
+
     
