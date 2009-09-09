@@ -99,13 +99,11 @@ class SymTF(object):
 
     def to_num_TF(self,var_dict,dt=0.01,maxt=5.0,myvar='s'):
         namespace = var_dict.copy()
-        num = []
-        den = []
-        for cn,cd in zip(self.num.coeffs,self.den.coeffs):
-            cnn = eval(cn,namespace)
-            cnd = eval(cd,namespace)
-            num.append(cnn)
-            den.append(cnd)
-        return TF.__init__(self,num,den,dt=dt,maxt=maxt,myvar=myvar)
+        num = list(self.num.iter_all_coeffs())
+        den = list(self.den.iter_all_coeffs())
+        tf_num = [eval(str(i),namespace) for i in num]
+        tf_den = [eval(str(i),namespace) for i in den]
+        print tf_num,tf_den
+        return TF(tf_num,tf_den,dt=dt,maxt=maxt,myvar=myvar)
 
     
