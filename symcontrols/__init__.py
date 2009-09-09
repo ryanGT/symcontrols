@@ -1,6 +1,6 @@
 from sympy import Poly
-from sympy import Basic
 from controls import TransferFunction as TF
+import sympy
 
 def poly_coeffs_filled(p):
     cs = p.coeffs
@@ -41,7 +41,7 @@ class SymTF(object):
     def __add__(self,other):
         if hasattr(other,'num') and hasattr(other,'den'):
             if len(list(self.den.iter_all_coeffs()))==len(list(other.den.iter_all_coeffs())) and \
-                   (list(self.den.iter_all_coeffs())==list(other.den.iter_all_coeffs())).all():
+                   list(self.den.iter_all_coeffs())==list(other.den.iter_all_coeffs()):
                 return SymTF(self.num+other.num,self.den)
             else:
                 return SymTF(self.num*other.den+other.num*self.den,self.den*other.den)
@@ -90,7 +90,9 @@ class SymTF(object):
 
     def __div__(self,other):
         if hasattr(other,'num') and hasattr(other,'den'):
-            if self.den == other.den:
+            if self.den == other.den and self.num == other.num:
+                return 1
+            elif self.den == other.den:
                 return SymTF(self.num,other.num)
             else:
                 return SymTF(self.num*other.den,self.den*other.num)
