@@ -1,4 +1,4 @@
-from sympy import Poly as SympyPoly
+from sympy import Poly
 from sympy import Basic
 from controls import TransferFunction as TF
 
@@ -12,21 +12,18 @@ def poly_coeffs_filled(p):
     l = [coeff_dict[item] for item in sorted(coeff_dict.keys(),reverse=True)]
     return tuple(l)
 
-class Poly(SympyPoly):
-    def __new__(self,expr,var='s',*args,**flags):
-        new = SympyPoly.__new__(self,expr,var)
-        self.coeffs = poly_coeffs_filled(new)
-        return Basic.__new__(self,*args,**flags)
+#class Poly(SympyPoly):
+#    def __new__(cls,expr,var='s',*args,**flags):
+#        new = SympyPoly.__new__(cls,expr,var)
+#        new.coeffs = poly_coeffs_filled(new)
+#        return Basic.__new__(cls,*args,**flags)
 
     
 
-class SymTF:
+class SymTF(object):
     def __init__(self,num,den,var='s'):
         self.num = Poly(num,var)
         self.den = Poly(den,var)
-        
-        return Basic.__new__(self)
-
 
     def __repr__(self,labelstr='systemid.SymTF'):
         nstr=str(self.num)
@@ -43,8 +40,8 @@ class SymTF:
 
     def __add__(self,other):
         if hasattr(other,'num') and hasattr(other,'den'):
-            if len(self.den.coeffs)==len(other.den.coeffs) and \
-                   (self.den.coeffs==other.den.coeffs).all():
+            if len(list(self.den.iter_all_coeffs()))==len(list(other.den.iter_all_coeffs())) and \
+                   (list(self.den.iter_all_coeffs())==list(other.den.iter_all_coeffs())).all():
                 return SymTF(self.num+other.num,self.den)
             else:
                 return SymTF(self.num*other.den+other.num*self.den,self.den*other.den)
@@ -53,22 +50,29 @@ class SymTF:
         else:
             raise ValueError, 'Do not know how to add SymTF and '+str(other) +' which is of type '+str(type(other))
 
+    def __sub__(self,other):
+        if hasattr(other,'num') and hasattr(other,'den'):
+            if len(list(self.den.iter_all_coeffs()))==len(list(other.den.iter_all_coeffs())) and \
+                   (list(self.den.iter_all_coeffs())==list(other.den.iter_all_coeffs())).all():
+                return SymTF(self.num-other.num,self.den)
+            else:
+                return SymTF(self.num*other.den-other.num*self.den,self.den*other.den)
+        elif isinstance(other, int) or isinstance(other, float):
+            return SymTF(other*self.den-self.num,self.den)
+        else:
+            raise ValueError, 'Do not know how to subtract SymTF and '+str(other) +' which is of type '+str(type(other))
+
     def __mul__(self,other):
-        if isinstance(other, Digital_P_Control):
-           return self.__class__(other.kp*self.num, self.den)
-        elif hasattr(other,'num') and hasattr(other,'den'):
-            if myeq(self.num,other.den) and myeq(self.den,other.num):
+        if hasattr(other,'num') and hasattr(other,'den'):
+            if self.num == other.den and self.den == other.num:
                 return 1
-            elif myeq(self.num,other.den):
+            elif self.num == other.den:
                 return self.__class__(other.num,self.den)
-            elif myeq(self.den,other.num):
+            elif self.den == other.num:
                 return self.__class__(self.num,other.den)
             else:
-               gain = self.gain*other.gain
-               new_num, new_den = polyfactor(self.num*other.num, \
+               return self.__class__(self.num*other.num, \
                                              self.den*other.den)
-               newtf = self.__class__(new_num*gain, new_den)
-               return newtf
         elif isinstance(other, int) or isinstance(other, float):
             return self.__class__(other*self.num,self.den)
 
@@ -86,12 +90,12 @@ class SymTF:
 
     def __div__(self,other):
         if hasattr(other,'num') and hasattr(other,'den'):
-            if myeq(self.den,other.den):
-                return TransferFunction(self.num,other.num)
+            if self.den == other.den:
+                return SymTF(self.num,other.num)
             else:
-                return TransferFunction(self.num*other.den,self.den*other.num)
+                return SymTF(self.num*other.den,self.den*other.num)
         elif isinstance(other, int) or isinstance(other, float):
-            return TransferFunction(self.num,other*self.den)
+            return SymTF(self.num,other*self.den)
 
     def to_num_TF(self,var_dict,dt=0.01,maxt=5.0,myvar='s'):
         namespace = var_dict.copy()
